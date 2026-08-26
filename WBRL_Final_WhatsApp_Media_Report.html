@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WBRL WhatsApp Media Report</title>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f2f5f6;color:#22343d}
+header{background:#087b86;color:#fff;padding:22px}.wrap{max-width:1200px;margin:auto;padding:0 16px}
+h1{margin:0;font-size:26px}.sub{margin-top:6px;opacity:.9}.card{background:#fff;margin:18px 0;padding:20px;border-radius:14px;box-shadow:0 2px 8px #00000012}
+button{background:#087b86;color:#fff;border:0;border-radius:8px;padding:12px 16px;font-weight:bold;cursor:pointer;margin:5px 4px 5px 0}
+button.alt{background:#596a70}.filebox{border:2px dashed #7fa7ad;border-radius:12px;padding:20px;text-align:center;margin-top:12px}
+#fileInput{display:none}.fileLabel{display:inline-block;background:#087b86;color:#fff;padding:12px 16px;border-radius:8px;font-weight:bold;cursor:pointer}
+#fileList{margin-top:12px;text-align:left;max-height:250px;overflow:auto}.fileItem{padding:9px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;gap:10px}
+.remove{background:#c0392b;padding:5px 9px;margin:0}.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin-top:14px}
+label{font-size:13px;font-weight:bold;display:flex;flex-direction:column;gap:5px}input[type=date]{padding:10px;border:1px solid #bbb;border-radius:7px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.stat{background:#fff;padding:15px;border-radius:12px;box-shadow:0 2px 8px #00000012}.stat b{font-size:28px;display:block;margin-top:5px}
+.tableWrap{overflow:auto;max-height:600px;border:1px solid #ddd}table{border-collapse:collapse;width:max-content;min-width:100%}th,td{border:1px solid #c8d0d2;padding:8px;text-align:center;font-size:13px}thead th{background:#087b86;color:#fff}td:first-child,th:first-child{position:sticky;left:0;background:#fff;color:#22343d;font-weight:bold;z-index:1}.yes{background:#d9f3df;color:#176c31;font-weight:bold}.no{color:#788}
+#status{margin-top:10px;padding:10px;border-radius:7px;display:none}.ok{display:block!important;background:#dff5e5;color:#176b31}.error{display:block!important;background:#ffe2e2;color:#9b2020}
+.note{font-size:13px;color:#617178;line-height:1.5}
+@media(max-width:650px){.stats{grid-template-columns:repeat(2,1fr)}h1{font-size:21px}.card{padding:14px}.fileItem{font-size:12px}}
+</style>
+</head>
+<body>
+<header><div class="wrap"><h1>WBRL WhatsApp Media Report</h1><div class="sub">AWW WP NO Wise • Photo & Video • Weekly Excel Report</div></div></header>
+<main class="wrap">
+
+<div class="card">
+<h2>WhatsApp Export Files</h2>
+<p class="note">Android: একবারে একটি করে <b>Add WhatsApp File</b> করুন। এভাবে 50+ file queue-তে যোগ করা যাবে। Laptop: multiple file select করা যাবে। ZIP বা TXT support করে।</p>
+<div class="filebox">
+<label class="fileLabel" for="fileInput">+ Add WhatsApp File</label>
+<input id="fileInput" type="file" accept=".zip,.txt" multiple>
+<div id="queueCount"><b>0 file ready</b></div>
+<div id="fileList"></div>
+<button class="alt" id="clearBtn">Clear All</button>
+</div>
+<div class="controls">
+<label>From Date<input type="date" id="fromDate"></label>
+<label>To Date<input type="date" id="toDate"></label>
+<button id="analyzeBtn">Analyze All Files</button>
+<button class="alt" id="excelBtn">Download Excel</button>
+</div>
+<div id="status"></div>
+</div>
+
+<div class="stats">
+<div class="stat">Chat Files<b id="fileStat">0</b></div>
+<div class="stat">AWW WP NO<b id="senderStat">0</b></div>
+<div class="stat">Total Photo<b id="photoStat">0</b></div>
+<div class="stat">Total Video<b id="videoStat">0</b></div>
+</div>
+
+<div class="card">
+<h2>Media Report Preview</h2>
+<p class="note">Date-wise YES/NO মানে ওই দিনে media পাঠিয়েছে কি না। শেষের Total Photo ও Total Video হলো WhatsApp export থেকে পাওয়া <b>actual media count</b>।</p>
+<div class="tableWrap"><table id="report"><thead><tr><th>AWW WP NO</th></tr></thead><tbody><tr><td>Files add করে Analyze করুন</td></tr></tbody></table></div>
+</div>
+</main>
+
+<script>
+let selectedFiles=[], reportData={dates:[], senders:[], data:{}, totalPhoto:{}, totalVideo:{}};
+
+const $=id=>document.getElementById(id);
+function status(text,type){const e=$('status');e.textContent=text;e.className=type;e.style.display='block'}
+function updateQueue(){
+ $('queueCount').innerHTML='<b>'+selectedFiles.length+' file ready</b>';
+ $('fileList').innerHTML=selectedFiles.map((f,i)=>'<div class="fileItem"><span>'+esc(f.name)+'</span><button class="remove" onclick="removeFile('+i+')">Remove</button></div>').join('');
+}
+function removeFile(i){selectedFiles.splice(i,1);updateQueue()}
+$('fileInput').addEventListener('change',e=>{
+ const incoming=[...e.target.files];
+ incoming.forEach(f=>{if(!selectedFiles.some(x=>x.name===f.name&&x.size===f.size))selectedFiles.push(f)});
+ e.target.value=''; updateQueue();
+});
+$('clearBtn').onclick=()=>{selectedFiles=[];updateQueue()};
+
+function esc(v){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function mediaType(text){
+ text=text.toLowerCase();
+ if(/\.(jpg|jpeg|png|webp|heic|gif)\b/.test(text)||/\b(image|photo|picture)\b/.test(text)) return 'photo';
+ if(/\.(mp4|mov|3gp|mkv|avi|webm)\b/.test(text)||/\bvideo\b/.test(text)) return 'video';
+ return null;
+}
+function parseDate(s){
+ let m=s.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})$/);if(!m)return null;
+ let a=+m[1],b=+m[2],y=+m[3];if(y<100)y+=2000;
+ // WhatsApp exports are generally DD/MM/YYYY; swap only when first part cannot be day
+ if(a>12&&b<=12){} else if(b>12&&a<=12){let t=a;a=b;b=t}
+ let d=new Date(y,b-1,a);return isNaN(d)?null:d;
+}
+function dateISO(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function inRange(d){
+ const x=dateISO(d),f=$('fromDate').value,t=$('toDate').value;
+ return (!f||x>=f)&&(!t||x<=t);
+}
+function parseChat(text){
+ text=text.replace(/\r/g,'');
+ const lines=text.split('\n'), entries=[];
+ let current='';
+ const start=/^(?:\[)?(\d{1,2}[\/.-]\d{1,2}[\/.-]\d{2,4})[,\s]+(\d{1,2}:\d{2}(?::\d{2})?(?:\s?[AaPp][Mm])?)(?:\])?\s*[-–]\s*/;
+ for(const line of lines){if(start.test(line)){if(current)entries.push(current);current=line}else if(current)current+='\n'+line}
+ if(current)entries.push(current);
+ const rows=[];
+ for(const e of entries){
+   const m=e.match(start);if(!m)continue;
+   const d=parseDate(m[1]);if(!d||!inRange(d))continue;
+   const rest=e.slice(m[0].length);
+   const sm=rest.match(/^([^:\n]{1,200}):\s*([\s\S]*)$/);if(!sm)continue;
+   const type=mediaType(sm[2]);if(type)rows.push({sender:sm[1].trim(),date:dateISO(d),type});
+ }
+ return rows;
+}
+async function textsFromFile(file){
+ if(file.name.toLowerCase().endsWith('.txt')) return [await file.text()];
+ if(file.name.toLowerCase().endsWith('.zip')){
+   const zip=await JSZip.loadAsync(await file.arrayBuffer()), out=[];
+   for(const n in zip.files)if(!zip.files[n].dir&&n.toLowerCase().endsWith('.txt'))out.push(await zip.files[n].async('text'));
+   return out;
+ }
+ return [];
+}
+
+$('analyzeBtn').onclick=async()=>{
+ if(!selectedFiles.length){status('Please add WhatsApp ZIP/TXT files first.','error');return}
+ status('Analyzing '+selectedFiles.length+' selected file(s)...','ok');
+ try{
+  let rows=[],chatFiles=0;
+  for(const file of selectedFiles){const texts=await textsFromFile(file);chatFiles+=texts.length;texts.forEach(t=>rows.push(...parseChat(t)))}
+  const dates=[...new Set(rows.map(x=>x.date))].sort();
+  const senders=[...new Set(rows.map(x=>x.sender))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+  const data={},tp={},tv={};
+  senders.forEach(s=>{data[s]={};tp[s]=0;tv[s]=0;dates.forEach(d=>data[s][d]={photo:false,video:false})});
+  rows.forEach(r=>{
+    if(r.type==='photo'){data[r.sender][r.date].photo=true;tp[r.sender]++}
+    else {data[r.sender][r.date].video=true;tv[r.sender]++}
+  });
+  reportData={dates,senders,data,totalPhoto:tp,totalVideo:tv};
+  $('fileStat').textContent=chatFiles;$('senderStat').textContent=senders.length;
+  $('photoStat').textContent=rows.filter(x=>x.type==='photo').length;$('videoStat').textContent=rows.filter(x=>x.type==='video').length;
+  render();
+  status('Completed successfully. '+rows.length+' actual media entries found.','ok');
+ }catch(err){status('Error: '+err.message,'error')}
+};
+
+function formatDate(d){let a=d.split('-');return a[2]+'/'+a[1]+'/'+a[0]}
+function render(){
+ const t=$('report');
+ if(!reportData.senders.length){t.innerHTML='<thead><tr><th>AWW WP NO</th></tr></thead><tbody><tr><td>No photo/video media found.</td></tr></tbody>';return}
+ let h='<tr><th rowspan="2">AWW WP NO</th>';
+ reportData.dates.forEach(d=>h+='<th colspan="2">'+formatDate(d)+'</th>');
+ h+='<th rowspan="2">Total Photo</th><th rowspan="2">Total Video</th></tr><tr>';
+ reportData.dates.forEach(()=>h+='<th>Photo</th><th>Video</th>');h+='</tr>';
+ let b='';
+ reportData.senders.forEach(s=>{
+  b+='<tr><td>'+esc(s)+'</td>';
+  reportData.dates.forEach(d=>{let x=reportData.data[s][d];b+='<td class="'+(x.photo?'yes':'no')+'">'+(x.photo?'YES':'NO')+'</td><td class="'+(x.video?'yes':'no')+'">'+(x.video?'YES':'NO')+'</td>'});
+  b+='<td><b>'+reportData.totalPhoto[s]+'</b></td><td><b>'+reportData.totalVideo[s]+'</b></td></tr>';
+ });
+ t.innerHTML='<thead>'+h+'</thead><tbody>'+b+'</tbody>';
+}
+
+$('excelBtn').onclick=()=>{
+ if(!reportData.senders.length){status('Analyze files first, then download Excel.','error');return}
+ const r=[['AWW WP NO'],['']];
+ reportData.dates.forEach(d=>{r[0].push(formatDate(d),'');r[1].push('Photo','Video')});
+ r[0].push('Total Photo','Total Video');r[1].push('','');
+ reportData.senders.forEach(s=>{
+  const row=[s];
+  reportData.dates.forEach(d=>{let x=reportData.data[s][d];row.push(x.photo?'YES':'NO',x.video?'YES':'NO')});
+  row.push(reportData.totalPhoto[s],reportData.totalVideo[s]);r.push(row);
+ });
+ const ws=XLSX.utils.aoa_to_sheet(r);
+ const merges=[{s:{r:0,c:0},e:{r:1,c:0}}];
+ reportData.dates.forEach((d,i)=>merges.push({s:{r:0,c:1+i*2},e:{r:0,c:2+i*2}}));
+ let last=1+reportData.dates.length*2;
+ merges.push({s:{r:0,c:last},e:{r:1,c:last}},{s:{r:0,c:last+1},e:{r:1,c:last+1}});
+ ws['!merges']=merges;ws['!cols']=[{wch:24},...Array(reportData.dates.length*2).fill({wch:11}),{wch:14},{wch:14}];
+ const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Media Report');
+ XLSX.writeFile(wb,'WBRL_WhatsApp_Media_Report.xlsx');
+};
+</script>
+</body></html>
