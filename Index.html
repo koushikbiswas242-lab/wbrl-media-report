@@ -1,4 +1,6 @@
-<!doctype html>
+from pathlib import Path
+
+html = r'''<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -11,416 +13,347 @@
 <style>
 *{box-sizing:border-box}
 body{font-family:Arial,sans-serif;margin:0;background:#edf3f5;color:#263b4a}
+header{background:#087985;color:#fff;padding:18px 0}
 .wrap{max-width:1250px;margin:auto;padding:18px}
-header{background:#087985;color:#fff}
-header h1{margin:0 0 6px;font-size:28px}
+header .wrap{padding-top:0;padding-bottom:0}
+h1{margin:0 0 5px}
 .card,.stat{background:#fff;border:1px solid #c9d4d7;border-radius:12px;padding:16px;margin-bottom:15px}
+.upload-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.upload-box{border:2px dashed #94a3b8;border-radius:12px;padding:20px;text-align:center;background:#f8fafc;cursor:pointer}
+.upload-box:hover{border-color:#087985;background:#f0fdfa}
+.upload-box h3{margin:8px 0}.upload-box p{margin:0;color:#60717a;font-size:14px}
+input[type=file]{display:none}
 .controls{display:flex;gap:10px;flex-wrap:wrap;align-items:end}
 button{background:#087985;color:#fff;border:0;border-radius:8px;padding:11px 15px;font-weight:bold;cursor:pointer}
-button.secondary{background:#53666d}
-button:disabled{opacity:.55;cursor:not-allowed}
-input{padding:10px;border:1px solid #bbb;border-radius:7px;background:#fff}
+button.secondary{background:#64748b}button:disabled{opacity:.5;cursor:not-allowed}
+input[type=date]{padding:10px;border:1px solid #bbb;border-radius:7px}
 label{font-weight:bold;font-size:14px}
-.queue{margin-top:12px;padding:10px;border:1px solid #ddd;border-radius:8px;max-height:190px;overflow:auto;background:#fafafa}
+.queue{margin-top:12px;padding:10px;border:1px solid #ddd;border-radius:8px;max-height:230px;overflow:auto}
+.file{display:grid;grid-template-columns:1fr auto auto;gap:10px;padding:8px;border-bottom:1px solid #eee;align-items:center}
+.badge{background:#e0f2fe;color:#075985;border-radius:20px;padding:3px 8px;font-size:12px;font-weight:bold}
+.modified{font-size:12px;color:#64748b}
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
 .stat b{display:block;font-size:25px;margin-top:5px}
 .table{overflow:auto;border:1px solid #aaa}
 table{border-collapse:collapse;width:max-content;min-width:100%}
 th,td{border:1px solid #aaa;padding:8px;text-align:center;white-space:nowrap}
-thead th{background:#168fa0;color:#fff}
+th{background:#168fa0;color:#fff}
 .yes{background:#dff5e5;font-weight:bold}
 .total{background:#fff4d6;font-weight:bold}
-.progress{margin-top:12px;height:10px;background:#e3e8ea;border-radius:8px;overflow:hidden}
-.progress div{height:100%;width:0;background:#087985;transition:width .2s}
-.note{font-size:13px;color:#52656d}
-@media(max-width:650px){
- .wrap{padding:10px}
- header h1{font-size:23px}
- .stats{grid-template-columns:repeat(2,1fr)}
- button{width:100%}
- label{width:100%}
- input{width:100%}
+.progress{height:8px;background:#e3e8ea;border-radius:8px;overflow:hidden;margin-top:10px}
+.progress div{height:100%;width:0;background:#087985}
+.note{font-size:13px;color:#64748b}
+@media(max-width:700px){
+ .wrap{padding:10px}.upload-grid,.stats{grid-template-columns:1fr}
+ button{width:100%}.file{grid-template-columns:1fr}
+ input[type=date]{width:100%}label{width:100%}
 }
 </style>
 </head>
 
 <body>
 <header>
-<div class="wrap">
-<h1>WBRL Media Report</h1>
-<div>WhatsApp Media • 91 + 10 Digit WP Number • Excel / CSV Report</div>
-</div>
+ <div class="wrap">
+  <h1>WBRL Media Report</h1>
+  <div>WhatsApp Media Chat • Excel / CSV • Final Media Report</div>
+ </div>
 </header>
 
 <main class="wrap">
 
 <div class="card">
-<b>WhatsApp Export Files</b>
+ <h2>Add Files</h2>
+ <div class="upload-grid">
+  <label class="upload-box">
+   <div style="font-size:34px">📱</div>
+   <h3>Add WhatsApp Media Chat</h3>
+   <p>WhatsApp Export Chat files: TXT or ZIP</p>
+   <input id="mediaPicker" type="file" accept=".txt,.zip" multiple>
+  </label>
 
-<div class="controls" style="margin-top:12px">
-<button id="add">+ Add Files</button>
-<button id="clear" class="secondary">Clear Files</button>
+  <label class="upload-box">
+   <div style="font-size:34px">📁</div>
+   <h3>Add WhatsApp Export / Excel / CSV</h3>
+   <p>TXT, ZIP, XLSX, XLS or CSV files</p>
+   <input id="allPicker" type="file" accept=".txt,.zip,.xlsx,.xls,.csv" multiple>
+  </label>
+ </div>
 
-<label>From
-<input id="from" type="date">
-</label>
+ <div class="controls" style="margin-top:14px">
+  <button id="clear" class="secondary">Clear Files</button>
+  <label>From Date<br><input id="from" type="date"></label>
+  <label>To Date<br><input id="to" type="date"></label>
+  <button id="analyze">Analyze Files</button>
+  <button id="excel" disabled>Download Excel</button>
+  <button id="csv" disabled>Download CSV</button>
+ </div>
 
-<label>To
-<input id="to" type="date">
-</label>
-
-<button id="analyze">Analyze All Files</button>
-<button id="downloadExcel" disabled>Download Excel</button>
-<button id="downloadCSV" disabled>Download CSV</button>
-</div>
-
-<input id="picker" type="file" accept=".zip,.txt,.csv,.xlsx,.xls" multiple hidden>
-
-<div class="queue" id="queue">No files added yet.</div>
-<div class="progress"><div id="progressBar"></div></div>
-<p id="status"></p>
-<p class="note">60+ WhatsApp export files can be selected together. No artificial 60-file limit.</p>
+ <div class="queue" id="queue">No files added yet.</div>
+ <div class="progress"><div id="bar"></div></div>
+ <p id="status"></p>
+ <p class="note">You can select 60+ files together on laptop or Android.</p>
 </div>
 
 <div class="stats">
-<div class="stat">Files Read<b id="cf">0</b></div>
-<div class="stat">Media Senders<b id="ms">0</b></div>
-<div class="stat">Photos<b id="ph">0</b></div>
-<div class="stat">Videos<b id="vi">0</b></div>
+ <div class="stat">Files Read<b id="cf">0</b></div>
+ <div class="stat">Media Senders<b id="ms">0</b></div>
+ <div class="stat">Photos<b id="ph">0</b></div>
+ <div class="stat">Videos<b id="vi">0</b></div>
 </div>
 
 <div class="card">
-<h2>Date-wise Media Report</h2>
-<div class="table">
-<table id="report">
-<thead><tr><th>AWW WP NO</th></tr></thead>
-<tbody><tr><td>Add files and Analyze.</td></tr></tbody>
-</table>
-</div>
+ <h2>Date-wise Media Report</h2>
+ <div class="table">
+  <table id="report">
+   <thead><tr><th>AWW WP NO</th></tr></thead>
+   <tbody><tr><td>Upload files and click Analyze Files.</td></tr></tbody>
+  </table>
+ </div>
 </div>
 
 </main>
 
 <script>
+const $=id=>document.getElementById(id);
+
 let files=[];
 let DATA={dates:[],senders:[],m:{}};
 let COUNTS={files:0,photos:0,videos:0};
 
-const $=id=>document.getElementById(id);
+/*
+ DATA SOURCE PRIORITY:
+ Each uploaded file has file.lastModified.
+ For the same WhatsApp Number + Date:
+ the record from the newest Last Modified file wins.
+ TXT/ZIP media records are accumulated inside one source file.
+ Excel/CSV values are read as YES/NO report values.
+*/
 
-$('add').onclick=()=>$('picker').click();
+function esc(s){
+ return String(s).replace(/[&<>"']/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[x]));
+}
+
+function addFiles(list){
+ for(const f of list){
+  if(!files.some(x=>x.name===f.name&&x.size===f.size&&x.lastModified===f.lastModified))files.push(f);
+ }
+ queue();
+}
+
+$('mediaPicker').onchange=e=>{addFiles(e.target.files);e.target.value=''};
+$('allPicker').onchange=e=>{addFiles(e.target.files);e.target.value=''};
 
 $('clear').onclick=()=>{
- files=[];
- DATA={dates:[],senders:[],m:{}};
- COUNTS={files:0,photos:0,videos:0};
- $('downloadExcel').disabled=true;
- $('downloadCSV').disabled=true;
- $('status').textContent='';
- $('progressBar').style.width='0%';
- queue();
- render();
-};
-
-$('picker').onchange=e=>{
- for(const f of e.target.files){
-  if(!files.some(x=>x.name===f.name&&x.size===f.size&&x.lastModified===f.lastModified)){
-   files.push(f);
-  }
- }
- e.target.value='';
- queue();
+ files=[]; DATA={dates:[],senders:[],m:{}}; COUNTS={files:0,photos:0,videos:0};
+ $('excel').disabled=true;$('csv').disabled=true;$('status').textContent='';
+ $('bar').style.width='0%';queue();render();
 };
 
 function queue(){
- $('queue').innerHTML=files.length
- ? '<b>'+files.length+' file(s) ready</b>'+
-   files.map((f,i)=>'<div>'+(i+1)+'. '+esc(f.name)+'</div>').join('')
- : 'No files added yet.';
-}
-
-function esc(s){
- return String(s).replace(/[&<>"']/g,m=>({
-  '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'
- }[m]));
-}
-
-function rawPhone(v){
- let d=String(v??'').replace(/\D/g,'');
- if(d.length===12&&d.startsWith('91'))d=d.slice(2);
- if(d.length>10)d=d.slice(-10);
- return d.length===10?d:'';
+ if(!files.length){$('queue').textContent='No files added yet.';return}
+ $('queue').innerHTML='<b>Selected Files: '+files.length+' / 60+</b>'+
+ files.map((f,i)=>{
+  const ext=(f.name.split('.').pop()||'FILE').toUpperCase();
+  return '<div class="file"><div>'+ (i+1)+'. '+esc(f.name)+'</div><span class="badge">'+ext+'</span><span class="modified">Last Modified: '+new Date(f.lastModified).toLocaleString()+'</span></div>';
+ }).join('');
 }
 
 function phone(v){
- const d=rawPhone(v);
- return d?'91'+d:'';
+ let d=String(v??'').replace(/\D/g,'');
+ if(d.length===12&&d.startsWith('91'))d=d.slice(2);
+ if(d.length>10)d=d.slice(-10);
+ return d.length===10?'91'+d:'';
+}
+
+function parseDate(v){
+ if(v instanceof Date&&!isNaN(v)){
+  return v.getFullYear()+'-'+String(v.getMonth()+1).padStart(2,'0')+'-'+String(v.getDate()).padStart(2,'0');
+ }
+ let s=String(v??'').trim();
+ let m=s.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})$/);
+ if(!m)return null;
+ let a=+m[1],b=+m[2],y=+m[3]; if(y<100)y+=2000;
+ // User format is MM/DD/YYYY by default.
+ let mo=a,dy=b;
+ if(a>12&&b<=12){dy=a;mo=b;}
+ let d=new Date(y,mo-1,dy);
+ if(d.getFullYear()!=y||d.getMonth()!=mo-1||d.getDate()!=dy)return null;
+ return y+'-'+String(mo).padStart(2,'0')+'-'+String(dy).padStart(2,'0');
+}
+
+function showDate(d){let a=d.split('-');return a[1]+'/'+a[2]+'/'+a[0]}
+
+function allowed(d){
+ const f=$('from').value,t=$('to').value;
+ return (!f||d>=f)&&(!t||d<=t);
 }
 
 function mediaType(t){
  t=String(t||'').toLowerCase();
-
- if(/(image|photo|picture).*(omitted|attached)/.test(t) ||
-    /\.(jpg|jpeg|png|webp|heic)\b/.test(t))
-  return 'PHOTO';
-
- if(/video.*(omitted|attached)/.test(t) ||
-    /\.(mp4|mov|3gp|mkv|avi|webm)\b/.test(t))
-  return 'VIDEO';
-
+ if(/(image|photo|picture).*(omitted|attached)/.test(t)||/\.(jpg|jpeg|png|webp|heic)\b/.test(t))return'P';
+ if(/video.*(omitted|attached)/.test(t)||/\.(mp4|mov|3gp|mkv|avi|webm)\b/.test(t))return'V';
  return null;
 }
 
-function dateVal(v){
- if(v instanceof Date&&!isNaN(v)){
-  return v.getFullYear()+'-'+
-   String(v.getMonth()+1).padStart(2,'0')+'-'+
-   String(v.getDate()).padStart(2,'0');
- }
-
- let m=String(v??'').trim().match(
-  /^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})$/
- );
- if(!m)return null;
-
- let a=+m[1],b=+m[2],y=+m[3];
- if(y<100)y+=2000;
-
- let mo=a,dy=b;
- if(a>12&&b<=12){dy=a;mo=b}
-
- let d=new Date(y,mo-1,dy);
-
- if(d.getFullYear()!=y ||
-    d.getMonth()!=mo-1 ||
-    d.getDate()!=dy)
-  return null;
-
- return y+'-'+String(mo).padStart(2,'0')+'-'+
-        String(dy).padStart(2,'0');
-}
-
-function showDate(d){
- let a=d.split('-');
- return a[1]+'/'+a[2]+'/'+a[0];
-}
-
-function allowed(d){
- let f=$('from').value;
- let t=$('to').value;
- return(!f||d>=f)&&(!t||d<=t);
-}
-
-/*
- WhatsApp TXT:
- 8/21/2026, 10:30 AM - 919876543210: image omitted
- [8/21/2026, 10:30 AM] 919876543210: video omitted
-*/
 function parseWhatsApp(txt){
  txt=String(txt||'').replace(/\r/g,'');
- let lines=txt.split('\n');
-
- let re=/^(?:\[)?(\d{1,2}[\/.-]\d{1,2}[\/.-]\d{2,4})[,\s]+(\d{1,2}:\d{2}(?::\d{2})?\s*(?:AM|PM|am|pm)?)(?:\])?\s*[-–]\s*/;
-
+ const lines=txt.split('\n');
+ const re=/^(?:\[)?(\d{1,2}[\/.-]\d{1,2}[\/.-]\d{2,4})[,\s]+(\d{1,2}:\d{2}(?::\d{2})?\s*(?:AM|PM|am|pm)?)(?:\])?\s*[-–]\s*/;
  let entries=[],cur='';
-
  for(const l of lines){
-  if(re.test(l)){
-   if(cur)entries.push(cur);
-   cur=l;
-  }else if(cur){
-   cur+='\n'+l;
-  }
+  if(re.test(l)){if(cur)entries.push(cur);cur=l}
+  else if(cur)cur+='\n'+l;
  }
  if(cur)entries.push(cur);
-
  let out=[];
-
  for(const e of entries){
-  let z=e.match(re);
-  if(!z)continue;
-
-  let d=dateVal(z[1]);
-  if(!d||!allowed(d))continue;
-
-  let body=e.slice(z[0].length);
-  let sep=body.indexOf(':');
-  if(sep<1)continue;
-
-  let p=phone(body.slice(0,sep));
-  let q=mediaType(body.slice(sep+1));
-
+  const z=e.match(re);if(!z)continue;
+  const d=parseDate(z[1]);if(!d||!allowed(d))continue;
+  const body=e.slice(z[0].length);
+  const i=body.indexOf(':');if(i<1)continue;
+  const p=phone(body.slice(0,i));
+  const q=mediaType(body.slice(i+1));
   if(p&&q)out.push({p,d,q});
  }
-
  return out;
 }
 
-function parseTabular(v){
- if(!v||v.length<2)return[];
+/* Reads the approved two-row report format:
+ Row 1 = repeated dates
+ Row 2 = Photo / Video / Total Photo / Total Video
+*/
+function parseTable(rows){
+ if(!rows||rows.length<2)return[];
+ const header1=rows[0]||[],header2=rows[1]||[];
+ let phoneCol=0;
+ for(let c=0;c<header1.length;c++){
+  const a=String(header1[c]||'').toUpperCase(),b=String(header2[c]||'').toUpperCase();
+  if(a.includes('AWW')||a.includes('WP NO')||b.includes('AWW')||b.includes('WP NO')){phoneCol=c;break}
+ }
 
- let pc=0;
- let dates={};
- let current=null;
+ let cols=[],lastDate=null;
+ for(let c=phoneCol+1;c<Math.max(header1.length,header2.length);c++){
+  const d=parseDate(header1[c]);
+  if(d)lastDate=d;
+  const typ=String(header2[c]||'').toUpperCase().trim();
+  if(lastDate&&(typ==='PHOTO'||typ==='VIDEO')){
+   cols.push({c,d:lastDate,q:typ==='PHOTO'?'P':'V'});
+  }
+ }
+
  let out=[];
-
- for(let c=0;c<(v[0]||[]).length;c++){
-  for(let r=0;r<Math.min(3,v.length);r++){
-   let d=dateVal(v[r][c]);
-   if(d)current=d;
-  }
-  if(current)dates[c]=current;
- }
-
- for(let r=0;r<Math.min(3,v.length);r++){
-  for(let c=0;c<(v[r]||[]).length;c++){
-   let h=String(v[r][c]||'').toUpperCase();
-   if(h.includes('AWW')||h.includes('WP NO')||h.includes('PHONE')){
-    pc=c;
-    break;
-   }
-  }
- }
-
- for(let r=2;r<v.length;r++){
-  let p=phone(v[r][pc]);
+ for(let r=2;r<rows.length;r++){
+  const p=phone(rows[r][phoneCol]);
   if(!p)continue;
-
-  for(let c=pc+1;c<(v[r]||[]).length;c++){
-   let d=dates[c];
-   let typ=String((v[1]||[])[c]||'').toUpperCase();
-   let val=String(v[r][c]||'').toUpperCase();
-
-   if(d&&allowed(d)&&val==='YES'){
-    if(typ.includes('PHOTO'))out.push({p,d,q:'PHOTO'});
-    if(typ.includes('VIDEO'))out.push({p,d,q:'VIDEO'});
+  for(const col of cols){
+   if(!allowed(col.d))continue;
+   const v=String(rows[r][col.c]??'').trim().toUpperCase();
+   if(v==='YES'||v==='NO'){
+    out.push({p,d:col.d,q:col.q,val:v==='YES'?1:0});
    }
   }
  }
-
  return out;
 }
 
-async function readFile(f){
- let n=f.name.toLowerCase();
-
- if(n.endsWith('.txt'))
-  return parseWhatsApp(await f.text());
+async function readOne(f){
+ const n=f.name.toLowerCase();
+ if(n.endsWith('.txt'))return parseWhatsApp(await f.text());
 
  if(n.endsWith('.zip')){
-  let z=await JSZip.loadAsync(await f.arrayBuffer());
+  const z=await JSZip.loadAsync(await f.arrayBuffer());
   let out=[];
-
   for(const k of Object.keys(z.files)){
    if(!z.files[k].dir&&k.toLowerCase().endsWith('.txt')){
     out.push(...parseWhatsApp(await z.files[k].async('text')));
    }
   }
-
   return out;
  }
 
- if(n.endsWith('.csv'))
-  return parseTabular(XLSX.utils.parse_csv(await f.text()));
+ if(n.endsWith('.csv')){
+  const wb=XLSX.read(await f.text(),{type:'string',raw:true});
+  const ws=wb.Sheets[wb.SheetNames[0]];
+  return parseTable(XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:''}));
+ }
 
  if(n.endsWith('.xlsx')||n.endsWith('.xls')){
-  let wb=XLSX.read(await f.arrayBuffer(),{
-   type:'array',
-   cellDates:true
-  });
-
+  const wb=XLSX.read(await f.arrayBuffer(),{type:'array',cellDates:true});
   let out=[];
-
-  wb.SheetNames.forEach(s=>{
-   out.push(...parseTabular(
-    XLSX.utils.sheet_to_json(
-     wb.Sheets[s],
-     {header:1,raw:true,defval:''}
-    )
-   ));
-  });
-
-  return out.flat();
+  for(const s of wb.SheetNames){
+   out.push(...parseTable(XLSX.utils.sheet_to_json(wb.Sheets[s],{header:1,raw:true,defval:''})));
+  }
+  return out;
  }
-
- return[];
+ return [];
 }
 
-function addRows(rows){
- for(const x of rows){
-  if(!DATA.m[x.p])DATA.m[x.p]={};
-
-  if(!DATA.m[x.p][x.d])
-   DATA.m[x.p][x.d]={P:0,V:0};
-
-  if(x.q==='PHOTO'){
-   DATA.m[x.p][x.d].P++;
-   COUNTS.photos++;
-  }
-
-  if(x.q==='VIDEO'){
-   DATA.m[x.p][x.d].V++;
-   COUNTS.videos++;
-  }
+function applyFileRecords(records,modified){
+ // Aggregate a single file first. This prevents duplicate messages in the same
+ // WhatsApp file from being overwritten incorrectly.
+ const local={};
+ for(const x of records){
+  if(!local[x.p])local[x.p]={};
+  if(!local[x.p][x.d])local[x.p][x.d]={P:0,V:0};
+  if(x.val!==undefined)local[x.p][x.d][x.q]=x.val;
+  else local[x.p][x.d][x.q]++;
  }
 
- DATA.senders=Object.keys(DATA.m).sort();
+ // For same number+date, newest file wins as a complete date record.
+ for(const p of Object.keys(local)){
+  if(!DATA.m[p])DATA.m[p]={};
+  for(const d of Object.keys(local[p])){
+   const old=DATA.m[p][d];
+   if(!old||modified>=old.modified){
+    DATA.m[p][d]={...local[p][d],modified};
+   }
+  }
+ }
+}
 
- DATA.dates=[
-  ...new Set(
-   DATA.senders.flatMap(p=>Object.keys(DATA.m[p]))
-  )
- ].sort();
+function finalize(){
+ DATA.senders=Object.keys(DATA.m).sort();
+ DATA.dates=[...new Set(DATA.senders.flatMap(p=>Object.keys(DATA.m[p])))]
+  .filter(allowed).sort();
+
+ COUNTS.photos=0;COUNTS.videos=0;
+ for(const p of DATA.senders){
+  for(const d of DATA.dates){
+   const x=DATA.m[p][d];
+   if(x){COUNTS.photos+=x.P||0;COUNTS.videos+=x.V||0;}
+  }
+ }
 }
 
 $('analyze').onclick=async()=>{
- if(!files.length){
-  $('status').textContent='Please add files first.';
-  return;
+ if(!files.length){$('status').textContent='Please add files first.';return}
+ if($('from').value&&$('to').value&&$('from').value>$('to').value){
+  $('status').textContent='From Date cannot be after To Date.';return;
  }
 
- if($('from').value&&$('to').value&&
-    $('from').value>$('to').value){
-  $('status').textContent='From date cannot be after To date.';
-  return;
- }
+ DATA={dates:[],senders:[],m:{}};COUNTS={files:0,photos:0,videos:0};
+ $('analyze').disabled=true;$('excel').disabled=true;$('csv').disabled=true;
 
- $('analyze').disabled=true;
- $('downloadExcel').disabled=true;
- $('downloadCSV').disabled=true;
-
- DATA={dates:[],senders:[],m:{}};
- COUNTS={files:0,photos:0,videos:0};
-
- let all=[];
+ // Sort oldest first so newest Last Modified is processed last.
+ const ordered=[...files].sort((a,b)=>a.lastModified-b.lastModified);
 
  try{
-  for(let i=0;i<files.length;i++){
+  for(let i=0;i<ordered.length;i++){
+   const f=ordered[i];
    try{
-    all.push(...await readFile(files[i]));
+    const records=await readOne(f);
+    applyFileRecords(records,f.lastModified);
     COUNTS.files++;
-   }catch(e){
-    console.log('Skipped:',files[i].name,e);
-   }
-
-   $('progressBar').style.width=
-    Math.round((i+1)/files.length*100)+'%';
-
-   if(i%5===0)
-    await new Promise(r=>setTimeout(r,0));
+   }catch(e){console.error(f.name,e)}
+   $('bar').style.width=Math.round((i+1)/ordered.length*100)+'%';
+   if(i%5===0)await new Promise(r=>setTimeout(r,0));
   }
 
-  addRows(all);
+  finalize();
   render();
-
-  $('downloadExcel').disabled=!DATA.senders.length;
-  $('downloadCSV').disabled=!DATA.senders.length;
-
-  $('status').textContent=
-   'Completed. '+COUNTS.files+
-   ' file(s) read; '+all.length+
-   ' actual media record(s) found.';
-
+  $('excel').disabled=!DATA.senders.length;
+  $('csv').disabled=!DATA.senders.length;
+  $('status').textContent='Completed. '+COUNTS.files+' file(s) read successfully.';
  }catch(e){
   $('status').textContent='Error: '+e.message;
  }finally{
@@ -434,172 +367,74 @@ function render(){
  $('ph').textContent=COUNTS.photos;
  $('vi').textContent=COUNTS.videos;
 
- let t=$('report');
-
+ const t=$('report');
  if(!DATA.senders.length){
-  t.innerHTML=
-   '<thead><tr><th>AWW WP NO</th></tr></thead>'+
-   '<tbody><tr><td>No valid media records found.</td></tr></tbody>';
+  t.innerHTML='<thead><tr><th>AWW WP NO</th></tr></thead><tbody><tr><td>No valid data found.</td></tr></tbody>';
   return;
  }
 
- let latest=DATA.dates[DATA.dates.length-1];
-
- /*
-  FINAL SCREEN FORMAT:
-
-  AWW WP NO | 08/20/2026 | 08/20/2026 | ... | 08/29/2026 | 08/29/2026
-            | Photo      | Video      | ... | Total Photo | Total Video
- */
+ const latest=DATA.dates[DATA.dates.length-1];
  let h='<tr><th rowspan="2">AWW WP NO</th>';
-
- DATA.dates.forEach(d=>{
-  h+='<th>'+showDate(d)+'</th>';
-  h+='<th>'+showDate(d)+'</th>';
- });
-
- h+='<th>'+showDate(latest)+'</th>';
- h+='<th>'+showDate(latest)+'</th>';
- h+='</tr><tr>';
-
- DATA.dates.forEach(()=>{
-  h+='<th>Photo</th><th>Video</th>';
- });
-
+ for(const d of DATA.dates)h+='<th>'+showDate(d)+'</th><th>'+showDate(d)+'</th>';
+ h+='<th>'+showDate(latest)+'</th><th>'+showDate(latest)+'</th></tr><tr>';
+ for(const d of DATA.dates)h+='<th>Photo</th><th>Video</th>';
  h+='<th>Total Photo</th><th>Total Video</th></tr>';
 
  let b='';
-
- DATA.senders.forEach(s=>{
-  let p=0,v=0;
-
-  b+='<tr><td>'+s+'</td>';
-
-  DATA.dates.forEach(d=>{
-   let x=DATA.m[s][d]||{P:0,V:0};
-
-   p+=x.P;
-   v+=x.V;
-
-   b+='<td class="'+(x.P?'yes':'')+'">'+
-      (x.P?'YES':'NO')+'</td>';
-
-   b+='<td class="'+(x.V?'yes':'')+'">'+
-      (x.V?'YES':'NO')+'</td>';
-  });
-
-  b+='<td class="total">'+p+'</td>';
-  b+='<td class="total">'+v+'</td></tr>';
- });
-
+ for(const p of DATA.senders){
+  let tp=0,tv=0;
+  b+='<tr><td>'+p+'</td>';
+  for(const d of DATA.dates){
+   const x=DATA.m[p][d]||{P:0,V:0};
+   tp+=x.P||0;tv+=x.V||0;
+   b+='<td class="'+(x.P?'yes':'')+'">'+(x.P?'YES':'NO')+'</td>';
+   b+='<td class="'+(x.V?'yes':'')+'">'+(x.V?'YES':'NO')+'</td>';
+  }
+  b+='<td class="total">'+tp+'</td><td class="total">'+tv+'</td></tr>';
+ }
  t.innerHTML='<thead>'+h+'</thead><tbody>'+b+'</tbody>';
 }
 
-function excelArray(){
- let latest=DATA.dates[DATA.dates.length-1];
+function outputArray(){
+ const latest=DATA.dates[DATA.dates.length-1];
+ const a=[['AWW WP NO'],['']];
+ for(const d of DATA.dates){
+  a[0].push(showDate(d),showDate(d));
+  a[1].push('Photo','Video');
+ }
+ a[0].push(showDate(latest),showDate(latest));
+ a[1].push('Total Photo','Total Video');
 
- let a=[['AWW WP NO'],['']];
-
- // DATE REPEATS ABOVE BOTH PHOTO AND VIDEO
- DATA.dates.forEach(d=>{
-  a[0].push(showDate(d));
-  a[0].push(showDate(d));
-  a[1].push('Photo');
-  a[1].push('Video');
- });
-
- // LATEST DATE ABOVE TOTALS
- a[0].push(showDate(latest));
- a[0].push(showDate(latest));
- a[1].push('Total Photo');
- a[1].push('Total Video');
-
- DATA.senders.forEach(s=>{
-  let r=[s];
-  let p=0,v=0;
-
-  DATA.dates.forEach(d=>{
-   let x=DATA.m[s][d]||{P:0,V:0};
-
-   p+=x.P;
-   v+=x.V;
-
-   r.push(x.P?'YES':'NO');
-   r.push(x.V?'YES':'NO');
-  });
-
-  r.push(p);
-  r.push(v);
-  a.push(r);
- });
-
+ for(const p of DATA.senders){
+  const r=[p];let tp=0,tv=0;
+  for(const d of DATA.dates){
+   const x=DATA.m[p][d]||{P:0,V:0};
+   tp+=x.P||0;tv+=x.V||0;
+   r.push(x.P?'YES':'NO',x.V?'YES':'NO');
+  }
+  r.push(tp,tv);a.push(r);
+ }
  return a;
 }
 
-$('downloadExcel').onclick=()=>{
+$('excel').onclick=()=>{
  if(!DATA.senders.length)return;
-
- let a=excelArray();
- let ws=XLSX.utils.aoa_to_sheet(a);
-
- let merges=[
-  {s:{r:0,c:0},e:{r:1,c:0}}
- ];
-
- /*
-  IMPORTANT:
-  Do NOT merge date over Photo+Video.
-  Same date is shown separately above Photo and Video.
- */
-
- let wb=XLSX.utils.book_new();
-
- XLSX.utils.book_append_sheet(
-  wb,
-  ws,
-  'Media Report'
- );
-
- // Column widths
- ws['!cols']=[
-  {wch:18},
-  ...Array(DATA.dates.length*2).fill({wch:14}),
-  {wch:18},
-  {wch:18}
- ];
-
- // Header styling through XLSX community edition is limited,
- // but structure and merged AWW header are preserved.
- ws['!merges']=merges;
-
- XLSX.writeFile(
-  wb,
-  'WBRL_WhatsApp_Media_Report.xlsx'
- );
+ const ws=XLSX.utils.aoa_to_sheet(outputArray());
+ ws['!merges']=[{s:{r:0,c:0},e:{r:1,c:0}}];
+ ws['!cols']=[{wch:18},...Array(DATA.dates.length*2+2).fill({wch:14})];
+ const wb=XLSX.utils.book_new();
+ XLSX.utils.book_append_sheet(wb,ws,'Media Report');
+ XLSX.writeFile(wb,'WBRL_WhatsApp_Media_Report.xlsx');
 };
 
-$('downloadCSV').onclick=()=>{
+$('csv').onclick=()=>{
  if(!DATA.senders.length)return;
-
- let csv=XLSX.utils.sheet_to_csv(
-  XLSX.utils.aoa_to_sheet(excelArray())
- );
-
- let blob=new Blob(
-  ['\uFEFF'+csv],
-  {type:'text/csv;charset=utf-8;'}
- );
-
- let u=URL.createObjectURL(blob);
- let a=document.createElement('a');
-
- a.href=u;
- a.download='WBRL_WhatsApp_Media_Report.csv';
-
- document.body.appendChild(a);
- a.click();
- a.remove();
-
+ const ws=XLSX.utils.aoa_to_sheet(outputArray());
+ const csv=XLSX.utils.sheet_to_csv(ws);
+ const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+ const u=URL.createObjectURL(blob),a=document.createElement('a');
+ a.href=u;a.download='WBRL_WhatsApp_Media_Report.csv';
+ document.body.appendChild(a);a.click();a.remove();
  setTimeout(()=>URL.revokeObjectURL(u),1000);
 };
 
@@ -607,3 +442,8 @@ render();
 </script>
 </body>
 </html>
+'''
+
+path = Path("/mnt/data/index.html")
+path.write_text(html, encoding="utf-8")
+print(f"Created {path} ({path.stat().st_size:,} bytes)")
